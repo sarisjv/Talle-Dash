@@ -1,32 +1,55 @@
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, callback  # Añadí callback aquí
 import plotly.express as px
 import pandas as pd
 from datetime import datetime
 
-# ------------------- Cargar archivo ---------------------
-# Asegúrate de que el archivo esté en la misma carpeta
-df = pd.read_excel('Registros Tecno World.xlsx', engine='openpyxl')
+# Cargar archivo (verifica la ruta)
+try:
+    df = pd.read_excel('Registros Tecno World.xlsx', engine='openpyxl')
+    print("✅ Archivo cargado correctamente. Filas:", len(df))
+except Exception as e:
+    print("❌ Error cargando el archivo:", str(e))
+    df = pd.DataFrame()  # DataFrame vacío para evitar errores
 
-# Preprocesamiento
-df['Fecha'] = pd.to_datetime(df['Fecha'])
-df['Mes'] = df['Fecha'].dt.to_period('M').astype(str)
-df['Año'] = df['Fecha'].dt.year
-df['Rentabilidad'] = df['Ingresos'] - df['Gastos']
-df['Margen'] = df['Rentabilidad'] / df['Ingresos'].replace(0, 1)
+# Preprocesamiento (con validación)
+if not df.empty:
+    df['Fecha'] = pd.to_datetime(df['Fecha'])
+    df['Mes'] = df['Fecha'].dt.to_period('M').astype(str)
+    df['Año'] = df['Fecha'].dt.year
+    df['Rentabilidad'] = df['Ingresos'] - df['Gastos']
+    df['Margen'] = df['Rentabilidad'] / df['Ingresos'].replace(0, 1)
+    print("✅ Datos preprocesados")
+else:
+    print("❌ No hay datos para preprocesar")
 
-# ------------------- App Dash --------------------------
 app = dash.Dash(__name__)
-server = app.server  # Necesario para Render
+server = app.server
 
+# Layout (simplificado para prueba)
 app.layout = html.Div([
     html.H1("Tablero Financiero TecnoWorld", style={'textAlign': 'center'}),
-
-    # ... (todo tu layout actual igual que en Colab)
+    
+    # Gráfico de prueba mínimo
+    dcc.Graph(
+        id='grafico-prueba',
+        figure=px.scatter(df, x='Ingresos', y='Gastos', title='Prueba Inicial')
+        if not df.empty else {}
+    ),
+    
+    # Tus componentes originales...
+    # (Añádelos gradualmente después de verificar que esto funciona)
 ])
 
-# ------------------- Callbacks --------------------------
-# ... (todos tus callbacks actuales igual que en Colab)
+# Callback de prueba
+@callback(
+    Output('grafico-prueba', 'figure'),
+    Input('grafico-prueba', 'id')
+)
+def update_graph(_):
+    if not df.empty:
+        return px.scatter(df, x='Ingresos', y='Gastos', color='Cliente', title='Datos Cargados')
+    return {}
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8050, debug=False)
+    app.run_server(host='0.0.0.0', port=8050, debug=True)
